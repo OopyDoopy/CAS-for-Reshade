@@ -36,6 +36,8 @@
 //     9 -> 8 registers
 //Further modified by OopyDoopy and Lord of Lunacy:
 //		Changed wording in the UI for the existing variable and added a new variable and relevant code to adjust sharpening strength.
+//Fix by Lord of Lunacy:
+//		Made the shader use a linear colorspace rather than sRGB, as recommended by the original AMD documentation from FidelityFX.
 
 uniform float Contrast <
 	ui_type = "drag";
@@ -52,6 +54,8 @@ uniform float Sharpening <
 > = 1.0;
 
 #include "ReShade.fxh"
+texture TexColor : COLOR;
+sampler sTexColor {Texture = TexColor; SRGBTexture = true;};
 
 float3 CASPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {    
@@ -59,15 +63,15 @@ float3 CASPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Targe
     //  a b c
     //  d(e)f
     //  g h i
-    float3 a = tex2Doffset(ReShade::BackBuffer, texcoord, int2(-1, -1)).rgb;
-    float3 b = tex2Doffset(ReShade::BackBuffer, texcoord, int2(0, -1)).rgb;
-    float3 c = tex2Doffset(ReShade::BackBuffer, texcoord, int2(1, -1)).rgb;
-    float3 d = tex2Doffset(ReShade::BackBuffer, texcoord, int2(-1, 0)).rgb;
-    float3 e = tex2Doffset(ReShade::BackBuffer, texcoord, int2(0, 0)).rgb;
-    float3 f = tex2Doffset(ReShade::BackBuffer, texcoord, int2(1, 0)).rgb;
-    float3 g = tex2Doffset(ReShade::BackBuffer, texcoord, int2(-1, 1)).rgb;
-    float3 h = tex2Doffset(ReShade::BackBuffer, texcoord, int2(0, 1)).rgb;
-    float3 i = tex2Doffset(ReShade::BackBuffer, texcoord, int2(1, 1)).rgb;
+    float3 a = tex2Doffset(sTexColor, texcoord, int2(-1, -1)).rgb;
+    float3 b = tex2Doffset(sTexColor, texcoord, int2(0, -1)).rgb;
+    float3 c = tex2Doffset(sTexColor, texcoord, int2(1, -1)).rgb;
+    float3 d = tex2Doffset(sTexColor, texcoord, int2(-1, 0)).rgb;
+    float3 e = tex2Doffset(sTexColor, texcoord, int2(0, 0)).rgb;
+    float3 f = tex2Doffset(sTexColor, texcoord, int2(1, 0)).rgb;
+    float3 g = tex2Doffset(sTexColor, texcoord, int2(-1, 1)).rgb;
+    float3 h = tex2Doffset(sTexColor, texcoord, int2(0, 1)).rgb;
+    float3 i = tex2Doffset(sTexColor, texcoord, int2(1, 1)).rgb;
   
 	// Soft min and max.
 	//  a b c             b
@@ -108,5 +112,6 @@ technique ContrastAdaptiveSharpen
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = CASPass;
+		SRGBWriteEnable = true;
 	}
 }
